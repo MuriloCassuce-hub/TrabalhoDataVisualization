@@ -12,9 +12,15 @@
   ],
   "scripts": {
     "start": "echo 'Execute npm run dev nas subpastas individuais'",
+<<<<<<< Updated upstream
     "postinstall": "echo 'Dependências instaladas para todos os workspaces!'",
     "dev": "vite"
   },
   "author": "Bianc biancamonsore10@gmail.com",
+=======
+    "postinstall": "echo 'Dependências instaladas para todos os workspaces!'"
+  },
+  "author": "Bianc <biancamonsore10@gmail.com>",
+>>>>>>> Stashed changes
   "license": "MIT"
 }

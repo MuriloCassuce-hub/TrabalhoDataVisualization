@@ -3,7 +3,11 @@ import { Taxi } from "./taxi";
 function createTableWithInnerHTML(data) {
     let tableHTML = '<table border="1"><tr>';
 
+<<<<<<< Updated upstream
     // Cria o cabeçalho da tabela
+=======
+    // Cria o cabeÃ§alho da tabela
+>>>>>>> Stashed changes
     Object.keys(data[0]).forEach(key => {
         tableHTML += `<th>${key}</th>`;
     });
