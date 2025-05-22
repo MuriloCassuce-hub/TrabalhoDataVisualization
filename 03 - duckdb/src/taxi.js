@@ -43,13 +43,14 @@ export class Taxi {
         if (!this.db || !this.conn)
             throw new Error('Database not initialized. Please call init() first.');
 
+        // 1,2,3,4,5 = DIAS DE SEMANA
+        // 0 e 6 = Fim de semana
         const sql = `
-            SELECT * 
-            FROM ${this.table}
-            WHERE lpep_pickup_datetime >= TIMESTAMP '2023-01-01 00:00:00'
-            LIMIT ${limit}
-        `;
-
+        SELECT *
+        FROM ${this.table}
+        WHERE STRFTIME(lpep_pickup_datetime, '%w') NOT IN ('1', '2', '3', '4', '5')
+        LIMIT ${limit}
+    `;
 
         return await this.query(sql);
     }
