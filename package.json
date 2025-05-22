@@ -1,0 +1,20 @@
+{
+  "name": "curso-vis",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "03 - duckdb",
+    "04 - transformacoes",
+    "05 - d3js (parte 01)",
+    "06 - d3js (parte 02)",
+    "07 - d3js & duckdb",
+    "08 - cores"
+  ],
+  "scripts": {
+    "start": "echo 'Execute npm run dev nas subpastas individuais'",
+    "postinstall": "echo 'Dependências instaladas para todos os workspaces!'",
+    "dev": "vite"
+  },
+  "author": "Bianc biancamonsore10@gmail.com",
+  "license": "MIT"
+}

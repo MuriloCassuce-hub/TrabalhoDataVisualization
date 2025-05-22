@@ -44,10 +44,12 @@ export class Taxi {
             throw new Error('Database not initialized. Please call init() first.');
 
         const sql = `
-                SELECT * 
-                FROM ${this.table}
-                LIMIT ${limit}
-            `;
+            SELECT * 
+            FROM ${this.table}
+            WHERE lpep_pickup_datetime >= TIMESTAMP '2023-01-01 00:00:00'
+            LIMIT ${limit}
+        `;
+
 
         return await this.query(sql);
     }

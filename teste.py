@@ -1,0 +1,1 @@
+select * frm r'C:\Users\muril\OneDrive\Desktop\Aula Visualização de Dados\curso-vis\00 - data\green\green_tripdata_2023-01.parquet'
