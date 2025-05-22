@@ -1,5 +1,18 @@
 import { Taxi } from "./taxi";
 
+function calculateMedian(values) {
+    if (!values || values.length === 0) return 0;
+    
+    // Ordena os valores
+    const sorted = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+
+    // Se for par, faz a média dos dois do meio
+    return sorted.length % 2 === 0 
+        ? (sorted[middle - 1] + sorted[middle]) / 2 
+        : sorted[middle];
+}
+
 function createTableWithInnerHTML(data) {
     let tableHTML = '<table border="1"><tr>';
 
@@ -14,7 +27,7 @@ function createTableWithInnerHTML(data) {
     tableHTML += `<th>tempo_viagem (min)</th>`;
     tableHTML += '</tr>';
 
-    // Variáveis para cálculos
+    // Variáveis para cálculos 
     let stats = {
         totalRows: 0,
         sumPassengerCount: 0,
@@ -22,7 +35,15 @@ function createTableWithInnerHTML(data) {
         sumFareAmount: 0,
         sumTipAmount: 0,
         weekdayTrips: 0,
-        weekendTrips: 0
+        weekendTrips: 0,
+        rateCodeCount: {},
+        paymentTypeCount: {},
+        tripTypeCount: {},
+        // Novos arrays para cálculo da mediana
+        passengerValues: [],
+        distanceValues: [],
+        fareValues: [],
+        tipValues: []
     };
 
     data.forEach(item => {
@@ -48,6 +69,20 @@ function createTableWithInnerHTML(data) {
                 dropoff = new Date(value);
             }
         });
+
+        // Contagem dos itens categóricos
+        if (item.passenger_count !== undefined) {
+            stats.passengerValues.push(Number(item.passenger_count));
+        }
+        if (item.trip_distance !== undefined) {
+            stats.distanceValues.push(Number(item.trip_distance));
+        }
+        if (item.fare_amount !== undefined) {
+            stats.fareValues.push(Number(item.fare_amount));
+        }
+        if (item.tip_amount !== undefined) {
+            stats.tipValues.push(Number(item.tip_amount));
+        }
 
         // Calcula tempo de viagem
         let tempoViagemMin = pickup && dropoff ? Math.round((dropoff - pickup) / 60000) : null;
@@ -79,10 +114,16 @@ function createTableWithInnerHTML(data) {
     console.log('=== ESTATÍSTICAS ===');
     console.log(`Total de corridas: ${stats.totalRows}`);
     console.log(`Dias úteis: ${stats.weekdayTrips} | Fins de semana: ${stats.weekendTrips}`);
-    console.log(`Média passageiros: ${mean(stats.sumPassengerCount, stats.totalRows)}`);
-    console.log(`Média distância: ${mean(stats.sumTripDistance, stats.totalRows)} milhas`);
-    console.log(`Média valor corrida: $${mean(stats.sumFareAmount, stats.totalRows)}`);
-    console.log(`Média gorjetas: $${mean(stats.sumTipAmount, stats.totalRows)}`);
+    console.log(`Média passageiros: ${mean(stats.sumPassengerCount, stats.totalRows)} | Mediana: ${calculateMedian(stats.passengerValues).toFixed(2)}`);
+    console.log(`Média distância: ${mean(stats.sumTripDistance, stats.totalRows)} milhas | Mediana: ${calculateMedian(stats.distanceValues).toFixed(2)} milhas`);
+    console.log(`Média valor corrida: $${mean(stats.sumFareAmount, stats.totalRows)} | Mediana: $${calculateMedian(stats.fareValues).toFixed(2)}`);
+    console.log(`Média gorjetas: $${mean(stats.sumTipAmount, stats.totalRows)} | Mediana: $${calculateMedian(stats.tipValues).toFixed(2)}`);
+    
+    // Novas estatísticas categóricas
+    console.log('\n=== CONTAGEM CATEGÓRICA ===');
+    console.log('RateCodeID:', stats.rateCodeCount);
+    console.log('Payment_type:', stats.paymentTypeCount);
+    console.log('Trip_type:', stats.tripTypeCount);
 
     // Insere tabela no DOM
     const div = document.querySelector("#table");
@@ -95,5 +136,4 @@ window.onload = async () => {
     await taxi.loadTaxi(6); // Carrega 6 meses
     const data = await taxi.test(50); // Limita a 50 registros
     createTableWithInnerHTML(data);
-    
 };
