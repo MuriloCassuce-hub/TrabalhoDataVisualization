@@ -1,11 +1,9 @@
-
 import { loadDb } from './config';
 
 export class Taxi {
     async init() {
         this.db = await loadDb();
         this.conn = await this.db.connect();
-
         this.color = "green";
         this.table = 'taxi_2023';
     }
@@ -15,19 +13,23 @@ export class Taxi {
             throw new Error('Database not initialized. Please call init() first.');
 
         const files = [];
-
         for (let id = 1; id <= months; id++) {
-            const sId = String(id).padStart(2, '0')
-            files.push({ key: `Y2023M${sId}`, url: `${this.color}/${this.color}_tripdata_2023-${sId}.parquet` });
+            const sId = String(id).padStart(2, '0');
+            files.push({ 
+                key: `Y2023M${sId}`, 
+                url: `${this.color}/${this.color}_tripdata_2023-${sId}.parquet` 
+            });
 
             const res = await fetch(files[files.length - 1].url);
-            await this.db.registerFileBuffer(files[files.length - 1].key, new Uint8Array(await res.arrayBuffer()));
+            await this.db.registerFileBuffer(
+                files[files.length - 1].key, 
+                new Uint8Array(await res.arrayBuffer())
+            );
         }
 
         await this.conn.query(`
             CREATE TABLE ${this.table} AS
-                SELECT * 
-                FROM read_parquet([${files.map(d => d.key).join(",")}]);
+            SELECT * FROM read_parquet([${files.map(d => d.key).join(",")}]);
         `);
     }
 
@@ -39,19 +41,59 @@ export class Taxi {
         return result.toArray().map(row => row.toJSON());
     }
 
+    // Query básica para teste (amostra)
     async test(limit = 10) {
-        if (!this.db || !this.conn)
-            throw new Error('Database not initialized. Please call init() first.');
+        const sql = `SELECT * FROM ${this.table} LIMIT ${limit}`;
+        return await this.query(sql);
+    }
 
-        // 1,2,3,4,5 = DIAS DE SEMANA
-        // 0 e 6 = Fim de semana
+    // Nova função: Análise completa por dia da semana
+    async getWeekdayAnalysis() {
         const sql = `
-        SELECT *
-        FROM ${this.table}
-        WHERE STRFTIME(lpep_pickup_datetime, '%w') NOT IN ('1', '2', '3', '4', '5')
-        LIMIT ${limit}
-    `;
+            SELECT 
+                DAYOFWEEK(lpep_pickup_datetime) AS weekday_num,
+                COUNT(*) AS total_trips,
+                AVG(trip_distance) AS avg_distance,
+                AVG(fare_amount) AS avg_fare,
+                AVG(passenger_count) AS avg_passengers,
+                AVG(total_amount) AS avg_total,
+                AVG(EXTRACT(EPOCH FROM (lpep_dropoff_datetime - lpep_pickup_datetime))/60) AS avg_duration_min
+            FROM ${this.table}
+            GROUP BY weekday_num
+            ORDER BY weekday_num
+        `;
+        return await this.query(sql);
+    }
 
+    // Nova função: Comparativo dias úteis vs fins de semana
+    async getWeekdayVsWeekend() {
+        const sql = `
+            SELECT 
+                CASE 
+                    WHEN DAYOFWEEK(lpep_pickup_datetime) IN (1, 7) THEN 'weekend'
+                    ELSE 'weekday'
+                END AS day_type,
+                COUNT(*) AS total_trips,
+                AVG(trip_distance) AS avg_distance,
+                AVG(fare_amount) AS avg_fare,
+                AVG(total_amount) AS avg_total
+            FROM ${this.table}
+            GROUP BY day_type
+        `;
+        return await this.query(sql);
+    }
+
+    // Nova função: Análise temporal (horários de pico)
+    async getTimeAnalysis() {
+        const sql = `
+            SELECT 
+                EXTRACT(HOUR FROM lpep_pickup_datetime) AS hour_of_day,
+                COUNT(*) AS total_trips,
+                AVG(fare_amount) AS avg_fare
+            FROM ${this.table}
+            GROUP BY hour_of_day
+            ORDER BY hour_of_day
+        `;
         return await this.query(sql);
     }
 }

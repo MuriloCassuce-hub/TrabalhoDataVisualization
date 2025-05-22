@@ -3,113 +3,97 @@ import { Taxi } from "./taxi";
 function createTableWithInnerHTML(data) {
     let tableHTML = '<table border="1"><tr>';
 
-<<<<<<< Updated upstream
-    // Cria o cabeçalho da tabela
-=======
-    // Cria o cabeÃ§alho da tabela
->>>>>>> Stashed changes
+    // Cabeçalhos
     Object.keys(data[0]).forEach(key => {
         tableHTML += `<th>${key}</th>`;
     });
 
-    let totalRows = 0;
-    let sumPassengerCount = 0;
-    let sumTripDistance = 0;
-    let sumFareAmount = 0;
-    let sumExtra = 0;
-    let sumMtaTax = 0;
-    let sumTipAmount = 0;
-    let sumTollsAmount = 0;
-    let sumTotalAmount = 0;
-    let sumCongestionSurcharge = 0;
-    let sumTempoViagem = 0;
-
-    // Colunas extras
-    tableHTML += `<th>tempo_viagem (min)</th>`;
+    // Adiciona colunas extras
+    tableHTML += `<th>weekday_number</th>`;
     tableHTML += `<th>fim_de_semana</th>`;
+    tableHTML += `<th>tempo_viagem (min)</th>`;
     tableHTML += '</tr>';
 
+    // Variáveis para cálculos
+    let stats = {
+        totalRows: 0,
+        sumPassengerCount: 0,
+        sumTripDistance: 0,
+        sumFareAmount: 0,
+        sumTipAmount: 0,
+        weekdayTrips: 0,
+        weekendTrips: 0
+    };
+
     data.forEach(item => {
+        stats.totalRows++;
+        
         let pickup = null;
         let dropoff = null;
-        let fimDeSemana = '';
+        let weekdayNumber = 0;
+        let isWeekend = false;
 
+        // Processa datas e calcula dia da semana
         Object.entries(item).forEach(([key, value]) => {
             if (key === 'lpep_pickup_datetime' && typeof value === 'number') {
                 pickup = new Date(value);
+                const utcDay = pickup.getUTCDay(); // 0-6 (Domingo=0)
+                weekdayNumber = utcDay === 0 ? 1 : utcDay + 1; // Domingo=1, Sábado=7
+                isWeekend = weekdayNumber === 1 || weekdayNumber === 7;
+                
+                if (isWeekend) stats.weekendTrips++;
+                else stats.weekdayTrips++;
             }
             if (key === 'lpep_dropoff_datetime' && typeof value === 'number') {
                 dropoff = new Date(value);
             }
         });
 
-        // Calcular tempo_viagem se possível
-        let tempoViagemMin = null;
-        if (pickup && dropoff) {
-            tempoViagemMin = Math.round((dropoff - pickup) / 60000);
-        }
+        // Calcula tempo de viagem
+        let tempoViagemMin = pickup && dropoff ? Math.round((dropoff - pickup) / 60000) : null;
 
-        // Soma os campos se todos forem válidos
-        totalRows++;
-        sumPassengerCount += Number(item.passenger_count) || 0;
-        sumTripDistance += Number(item.trip_distance) || 0;
-        sumFareAmount += Number(item.fare_amount) || 0;
-        sumExtra += Number(item.extra) || 0;
-        sumMtaTax += Number(item.mta_tax) || 0;
-        sumTipAmount += Number(item.tip_amount) || 0;
-        sumTollsAmount += Number(item.tolls_amount) || 0;
-        sumTotalAmount += Number(item.total_amount) || 0;
-        sumCongestionSurcharge += Number(item.congestion_surcharge) || 0;
-        sumTempoViagem += tempoViagemMin || 0;
+        // Atualiza estatísticas
+        stats.sumPassengerCount += Number(item.passenger_count) || 0;
+        stats.sumTripDistance += Number(item.trip_distance) || 0;
+        stats.sumFareAmount += Number(item.fare_amount) || 0;
+        stats.sumTipAmount += Number(item.tip_amount) || 0;
 
-        // Adiciona os dados na tabela HTML
+        // Linha da tabela
         tableHTML += '<tr>';
-
-        // Adiciona as colunas da tabela com os valores de cada item
         Object.entries(item).forEach(([key, value]) => {
             tableHTML += `<td>${value}</td>`;
         });
-
-        // Adiciona a coluna de tempo de viagem e fim de semana
+        
+        // Colunas extras
+        tableHTML += `<td>${weekdayNumber}</td>`;
+        tableHTML += `<td>${isWeekend ? 'Sim' : 'Não'}</td>`;
         tableHTML += `<td>${tempoViagemMin || ''}</td>`;
-        tableHTML += `<td>${fimDeSemana}</td>`;
         tableHTML += '</tr>';
     });
 
+    // Finaliza tabela
     tableHTML += '</table>';
 
-    // Exibe as médias no console
+    // Exibe estatísticas
     const mean = (sum, count) => (count ? (sum / count).toFixed(2) : '0');
+    console.log('=== ESTATÍSTICAS ===');
+    console.log(`Total de corridas: ${stats.totalRows}`);
+    console.log(`Dias úteis: ${stats.weekdayTrips} | Fins de semana: ${stats.weekendTrips}`);
+    console.log(`Média passageiros: ${mean(stats.sumPassengerCount, stats.totalRows)}`);
+    console.log(`Média distância: ${mean(stats.sumTripDistance, stats.totalRows)} milhas`);
+    console.log(`Média valor corrida: $${mean(stats.sumFareAmount, stats.totalRows)}`);
+    console.log(`Média gorjetas: $${mean(stats.sumTipAmount, stats.totalRows)}`);
 
-    console.log('MÉDIAS DAS COLUNAS:');
-    console.log(`passenger_count: ${mean(sumPassengerCount, totalRows)}`);
-    console.log(`trip_distance: ${mean(sumTripDistance, totalRows)}`);
-    console.log(`fare_amount: ${mean(sumFareAmount, totalRows)}`);
-    console.log(`extra: ${mean(sumExtra, totalRows)}`);
-    console.log(`mta_tax: ${mean(sumMtaTax, totalRows)}`);
-    console.log(`tip_amount: ${mean(sumTipAmount, totalRows)}`);
-    console.log(`tolls_amount: ${mean(sumTollsAmount, totalRows)}`);
-    console.log(`total_amount: ${mean(sumTotalAmount, totalRows)}`);
-    console.log(`congestion_surcharge: ${mean(sumCongestionSurcharge, totalRows)}`);
-    console.log(`tempo_viagem (min): ${mean(sumTempoViagem, totalRows)}`);
-
-    // Exibe a tabela no DOM
+    // Insere tabela no DOM
     const div = document.querySelector("#table");
-    if (div) {
-        div.innerHTML += tableHTML;
-    }
+    if (div) div.innerHTML = tableHTML;
 }
 
 window.onload = async () => {
-    const months = 6;
-    const limit = 50;
-
     const taxi = new Taxi();
-
     await taxi.init();
-    await taxi.loadTaxi(months);
-    const data = await taxi.test(limit);
-
+    await taxi.loadTaxi(6); // Carrega 6 meses
+    const data = await taxi.test(50); // Limita a 50 registros
     createTableWithInnerHTML(data);
-
+    
 };
