@@ -1,5 +1,9 @@
 import { Taxi } from "./taxi";
 
+// Variável global para armazenar as colunas
+let allColumns = {};
+
+// Funções de cálculo estatístico
 function calculateVariance(values) {
     if (values.length < 2) return 0;
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
@@ -15,75 +19,85 @@ function calculateRange(values) {
 }
 
 function calculateCV(values) {
-    return values.length ? (calculateStdDev(values) / (values.reduce((a, b) => a + b, 0) / values.length)) * 100 : 0;
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    return mean ? (calculateStdDev(values) / mean) * 100 : 0;
 }
 
 function calculateMedian(values) {
     if (!values || values.length === 0) return 0;
-    
     const sorted = [...values].sort((a, b) => a - b);
     const middle = Math.floor(sorted.length / 2);
-
     return sorted.length % 2 === 0 
         ? (sorted[middle - 1] + sorted[middle]) / 2 
         : sorted[middle];
 }
 
-function createTableWithInnerHTML(data) {
-    let tableHTML = '<table border="1"><tr>';
+function calculateStats(values) {
+    if (values.length === 0) return { 
+        mean: 0, 
+        median: 0, 
+        variance: 0, 
+        stdDev: 0, 
+        range: 0, 
+        cv: 0 
+    };
+    
+    const sorted = [...values].sort((a, b) => a - b);
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    
+    return {
+        mean,
+        median,
+        variance: calculateVariance(values),
+        stdDev: calculateStdDev(values),
+        range: calculateRange(values),
+        cv: calculateCV(values)
+    };
+}
 
-    // Cabeçalhos
+function showStatsSection(title, statKey, units = {}) {
+    console.log(`\n${title.toUpperCase()} DAS COLUNAS:`);
+    for (const [col, data] of Object.entries(allColumns)) {
+        const unit = units[col] || '';
+        console.log(`${col}: ${data[statKey].toFixed(2)}${unit}`);
+    }
+}
+
+function createTableWithInnerHTML(data) {
+    // Inicializa as colunas
+    allColumns = {
+        passenger_count: { values: [], sum: 0 },
+        trip_distance: { values: [], sum: 0 },
+        fare_amount: { values: [], sum: 0 },
+        extra: { values: [], sum: 0 },
+        mta_tax: { values: [], sum: 0 },
+        tip_amount: { values: [], sum: 0 },
+        tolls_amount: { values: [], sum: 0 },
+        improvement_surcharge: { values: [], sum: 0 },
+        total_amount: { values: [], sum: 0 },
+        congestion_surcharge: { values: [], sum: 0 },
+        tempo_viagem: { values: [] }
+    };
+
+    let stats = {
+        totalRows: 0,
+        weekdayTrips: 0,
+        weekendTrips: 0,
+        rateCodeCount: {},
+        paymentTypeCount: {},
+        tripTypeCount: {}
+    };
+
+    // Cria cabeçalhos da tabela
+    let tableHTML = '<table border="1"><tr>';
     Object.keys(data[0]).forEach(key => {
         tableHTML += `<th>${key}</th>`;
     });
+    tableHTML += `<th>weekday_number</th><th>fim_de_semana</th><th>tempo_viagem (min)</th></tr>`;
 
-    // Adiciona colunas extras
-    tableHTML += `<th>weekday_number</th>`;
-    tableHTML += `<th>fim_de_semana</th>`;
-    tableHTML += `<th>tempo_viagem (min)</th>`;
-    tableHTML += '</tr>';
-
-    // Variáveis para cálculos 
-    let stats = {
-        totalRows: 0,
-        sumPassengerCount: 0,
-        sumTripDistance: 0,
-        sumFareAmount: 0,
-        sumTipAmount: 0,
-        weekdayTrips: 0,
-        weekendTrips: 0,
-
-        rateCodeCount: {},
-        paymentTypeCount: {},
-        tripTypeCount: {},
-
-        passengerValues: [],
-        distanceValues: [],
-        fareValues: [],
-        tipValues: [],
-
-        variancePassenger: 0,
-        varianceDistance: 0,
-        varianceFare: 0,
-        varianceTip: 0,
-
-        passengerStdDev: 0,
-        passengerRange: 0,
-        passengerCV: 0,
-        
-        distanceStdDev: 0,
-        distanceRange: 0,
-        distanceCV: 0,
-        
-        fareStdDev: 0,
-        fareRange: 0,
-        fareCV: 0,
-        
-        tipStdDev: 0,
-        tipRange: 0,
-        tipCV: 0
-    };
-
+    // Processa cada registro
     data.forEach(item => {
         stats.totalRows++;
         
@@ -92,23 +106,37 @@ function createTableWithInnerHTML(data) {
         let weekdayNumber = 0;
         let isWeekend = false;
 
-        // Processa datas e calcula dia da semana
-        Object.entries(item).forEach(([key, value]) => {
-            if (key === 'lpep_pickup_datetime' && typeof value === 'number') {
-                pickup = new Date(value);
-                const utcDay = pickup.getUTCDay();
-                weekdayNumber = utcDay === 0 ? 1 : utcDay + 1;
-                isWeekend = weekdayNumber === 1 || weekdayNumber === 7;
-                
-                if (isWeekend) stats.weekendTrips++;
-                else stats.weekdayTrips++;
-            }
-            if (key === 'lpep_dropoff_datetime' && typeof value === 'number') {
-                dropoff = new Date(value);
+        // Processa datas
+        if (item.lpep_pickup_datetime && typeof item.lpep_pickup_datetime === 'number') {
+            pickup = new Date(item.lpep_pickup_datetime);
+            const utcDay = pickup.getUTCDay();
+            weekdayNumber = utcDay === 0 ? 1 : utcDay + 1;
+            isWeekend = weekdayNumber === 1 || weekdayNumber === 7;
+            
+            if (isWeekend) stats.weekendTrips++;
+            else stats.weekdayTrips++;
+        }
+
+        if (item.lpep_dropoff_datetime && typeof item.lpep_dropoff_datetime === 'number') {
+            dropoff = new Date(item.lpep_dropoff_datetime);
+        }
+
+        // Coleta dados numéricos
+        Object.keys(allColumns).forEach(col => {
+            if (col !== 'tempo_viagem' && item[col] !== undefined) {
+                const val = Number(item[col]) || 0;
+                allColumns[col].values.push(val);
+                allColumns[col].sum += val;
             }
         });
 
-        // Contagem dos itens categóricos (CORRIGIDO)
+        // Calcula tempo de viagem
+        if (pickup && dropoff) {
+            const tempoViagemMin = Math.round((dropoff - pickup) / 60000);
+            allColumns.tempo_viagem.values.push(tempoViagemMin);
+        }
+
+        // Contagem categórica
         if (item.RatecodeID !== undefined) {
             stats.rateCodeCount[item.RatecodeID] = (stats.rateCodeCount[item.RatecodeID] || 0) + 1;
         }
@@ -119,114 +147,42 @@ function createTableWithInnerHTML(data) {
             stats.tripTypeCount[item.trip_type] = (stats.tripTypeCount[item.trip_type] || 0) + 1;
         }
 
-        // Valores para medianas
-        if (item.passenger_count !== undefined) {
-            const val = Number(item.passenger_count) || 0;
-            stats.passengerValues.push(val);
-            stats.sumPassengerCount += val;
-        }
-        if (item.trip_distance !== undefined) {
-            const val = Number(item.trip_distance) || 0;
-            stats.distanceValues.push(val);
-            stats.sumTripDistance += val;
-        }
-        if (item.fare_amount !== undefined) {
-            const val = Number(item.fare_amount) || 0;
-            stats.fareValues.push(val);
-            stats.sumFareAmount += val;
-        }
-        if (item.tip_amount !== undefined) {
-            const val = Number(item.tip_amount) || 0;
-            stats.tipValues.push(val);
-            stats.sumTipAmount += val;
-        }
-
-        // Calcula tempo de viagem
-        let tempoViagemMin = pickup && dropoff ? Math.round((dropoff - pickup) / 60000) : null;
-
-        // Linha da tabela
+        // Adiciona linha na tabela
         tableHTML += '<tr>';
         Object.entries(item).forEach(([key, value]) => {
             tableHTML += `<td>${value}</td>`;
         });
-        
-        tableHTML += `<td>${weekdayNumber}</td>`;
-        tableHTML += `<td>${isWeekend ? 'Sim' : 'Não'}</td>`;
-        tableHTML += `<td>${tempoViagemMin || ''}</td>`;
-        tableHTML += '</tr>';
+        tableHTML += `<td>${weekdayNumber}</td><td>${isWeekend ? 'Sim' : 'Não'}</td><td>${pickup && dropoff ? Math.round((dropoff - pickup) / 60000) : ''}</td></tr>`;
     });
 
     // Finaliza tabela
     tableHTML += '</table>';
 
-    // Cálculo das medidas de dispersão
-    stats.passengerStdDev = calculateStdDev(stats.passengerValues);
-    stats.passengerRange = calculateRange(stats.passengerValues);
-    stats.passengerCV = calculateCV(stats.passengerValues);
-
-    stats.distanceStdDev = calculateStdDev(stats.distanceValues);
-    stats.distanceRange = calculateRange(stats.distanceValues);
-    stats.distanceCV = calculateCV(stats.distanceValues);
-
-    stats.fareStdDev = calculateStdDev(stats.fareValues);
-    stats.fareRange = calculateRange(stats.fareValues);
-    stats.fareCV = calculateCV(stats.fareValues);
-
-    stats.tipStdDev = calculateStdDev(stats.tipValues);
-    stats.tipRange = calculateRange(stats.tipValues);
-    stats.tipCV = calculateCV(stats.tipValues);
-
-    stats.variancePassenger = calculateVariance(stats.passengerValues);
-    stats.varianceDistance = calculateVariance(stats.distanceValues);
-    stats.varianceFare = calculateVariance(stats.fareValues);
-    stats.varianceTip = calculateVariance(stats.tipValues);
+    // Calcula estatísticas
+    Object.keys(allColumns).forEach(col => {
+        Object.assign(allColumns[col], calculateStats(allColumns[col].values));
+    });
 
     // Exibe estatísticas
-    const mean = (sum, count) => count ? (sum / count) : 0;
-    console.log('=== ESTATISTICA ===');
+    const units = {
+        trip_distance: ' milhas',
+        fare_amount: ' USD',
+        tip_amount: ' USD',
+        tolls_amount: ' USD',
+        total_amount: ' USD',
+        tempo_viagem: ' min'
+    };
 
-    // Função auxiliar para formatar números
-    const fmt = num => typeof num === 'number' ? num.toFixed(2) : 'N/A';
-
-    // Estatísticas para Passageiros
+    console.log('=== ESTATÍSTICAS ===');
     console.log(`Total de corridas: ${stats.totalRows}`);
     console.log(`Dias úteis: ${stats.weekdayTrips} | Fins de semana: ${stats.weekendTrips}`);
-    console.log('Passageiros:');
-    console.log(`  Media: ${fmt(mean(stats.sumPassengerCount, stats.totalRows))}`);
-    console.log(`  Mediana: ${fmt(calculateMedian(stats.passengerValues))}`);
-    console.log(`  Variancia: ${fmt(stats.variancePassenger)}`);
-    console.log(`  Desvio Padrão: ${fmt(stats.passengerStdDev)}`);
-    console.log(`  Amplitude: ${fmt(stats.passengerRange)}`);
-    console.log(`  Coef. Variação: ${fmt(stats.passengerCV)}%`);
+    showStatsSection('Médias', 'mean', units);
+    showStatsSection('Mediana', 'median', units);
+    showStatsSection('Variância', 'variance', units);
+    showStatsSection('Desvio Padrão', 'stdDev', units);
+    showStatsSection('Amplitude', 'range', units);
+    showStatsSection('Coeficiente de Variação', 'cv', { ...units, tempo_viagem: '%' });
 
-    // Estatísticas para Distância
-    console.log('\nDistância:');
-    console.log(`  Media: ${fmt(mean(stats.sumTripDistance, stats.totalRows))} milhas`);
-    console.log(`  Mediana: ${fmt(calculateMedian(stats.distanceValues))} milhas`);
-    console.log(`  Variancia: ${fmt(stats.varianceDistance)}`);
-    console.log(`  Desvio Padrão: ${fmt(stats.distanceStdDev)} milhas`);
-    console.log(`  Amplitude: ${fmt(stats.distanceRange)} milhas`);
-    console.log(`  Coef. Variação: ${fmt(stats.distanceCV)}%`);
-
-    // Estatísticas para Valor da Corrida
-    console.log('\nValor da Corrida:');
-    console.log(`  Media: $${fmt(mean(stats.sumFareAmount, stats.totalRows))}`);
-    console.log(`  Mediana: $${fmt(calculateMedian(stats.fareValues))}`);
-    console.log(`  Variancia: $${fmt(stats.varianceFare)}`);
-    console.log(`  Desvio Padrão: $${fmt(stats.fareStdDev)}`);
-    console.log(`  Amplitude: $${fmt(stats.fareRange)}`);
-    console.log(`  Coef. Variação: ${fmt(stats.fareCV)}%`);
-
-    // Estatísticas para Gorjetas
-    console.log('\nGorjetas:');
-    console.log(`  Media: $${fmt(mean(stats.sumTipAmount, stats.totalRows))}`);
-    console.log(`  Mediana: $${fmt(calculateMedian(stats.tipValues))}`);
-    console.log(`  Variancia: $${fmt(stats.varianceTip)}`);
-    console.log(`  Desvio Padrão: $${fmt(stats.tipStdDev)}`);
-    console.log(`  Amplitude: $${fmt(stats.tipRange)}`);
-    console.log(`  Coef. Variação: ${fmt(stats.tipCV)}%`);
-    
-    // Estatísticas categóricas
     console.log('\n=== CONTAGEM CATEGÓRICA ===');
     console.log('RateCodeID:', stats.rateCodeCount);
     console.log('Payment_type:', stats.paymentTypeCount);
@@ -240,7 +196,7 @@ function createTableWithInnerHTML(data) {
 window.onload = async () => {
     const taxi = new Taxi();
     await taxi.init();
-    await taxi.loadTaxi(6); // Carrega 6 meses
-    const data = await taxi.test(50); // Limita a 50 registros
+    await taxi.loadTaxi(6);
+    const data = await taxi.test();
     createTableWithInnerHTML(data);
 };
