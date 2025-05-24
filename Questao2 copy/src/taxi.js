@@ -118,14 +118,13 @@ export class Taxi {
         return await this.query(sql);
     }
 
-    async getTipVsHourScatterData(limit = 1000) {
+    async getTipVsHourScatterData() {
     const sql = `
         SELECT 
             EXTRACT(HOUR FROM lpep_pickup_datetime) AS hour,
             tip_amount
         FROM ${this.table}
         WHERE tip_amount IS NOT NULL
-        LIMIT ${limit}
     `;
     return await this.query(sql);
     }
