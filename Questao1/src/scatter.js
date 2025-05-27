@@ -185,7 +185,9 @@ function desenharBarraSimples(container, data, titulo) {
     .attr("y", d => y(d.value))
     .attr("height", d => y(0) - y(d.value))
     .attr("width", x.bandwidth())
-    .attr("fill", "#69b3a2")
+    .attr("fill", d => {
+        return d.label === "Dias Úteis" ? "#1f77b4" : "#ff7f0e"; // azul e laranja
+        })
     .on("mouseover", (event, d) => {
       tooltip.style("opacity", 1).text(`${d.label}: ${d.value}`);
     })
@@ -233,7 +235,13 @@ function desenharBarrasAgrupadas(container, data, eixoX, titulo, chaves) {
     .attr("y", d => y(d.value))
     .attr("width", x1.bandwidth())
     .attr("height", d => y(0) - y(d.value))
-    .attr("fill", d => color(d.key))
+    .attr("fill", d => {
+        if (d.key.includes("Dias Úteis")) return "#1f77b4";   // azul
+        if (d.key.includes("Fim de Semana")) return "#ff7f0e"; // laranja
+        return "#999"; // cor neutra para o caso de erro
+    })
+
+
     .on("mouseover", (event, d) => {
       tooltip.style("opacity", 1).text(`${d.key} - ${d.label}: ${d.value.toFixed(2)}`);
     })
@@ -274,7 +282,9 @@ function desenharBarrasEmpilhadas(container, data, chaveX, titulo) {
     .selectAll("g")
     .data(stackedData)
     .join("g")
-    .attr("fill", d => color(d.key))
+    .attr("fill", d => {
+        return d.key === "Dias Úteis" ? "#1f77b4" : "#ff7f0e";
+        })
     .selectAll("rect")
     .data(d => d)
     .join("rect")
