@@ -6,7 +6,7 @@ function main() {
   const nextBtn  = document.querySelector('#nextBtn');
 
   let currentChart = 0;
-  const totalCharts = 5;
+  const totalCharts = 9;
 
   async function doLoad() {
     clearChart();

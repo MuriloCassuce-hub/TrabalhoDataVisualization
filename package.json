@@ -14,5 +14,8 @@
     "start": "echo 'Execute npm run dev nas subpastas individuais'",
     "postinstall": "echo 'Dependências instaladas para todos os workspaces!'"
   },
-  "author": "elvisjunior994@gmail.com"
+  "author": "elvisjunior994@gmail.com",
+  "dependencies": {
+    "d3": "^7.9.0"
+  }
 }
