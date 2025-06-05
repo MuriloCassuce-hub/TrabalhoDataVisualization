@@ -30,19 +30,16 @@ export async function loadChart(index) {
     case 3:
       chartRatecodeTriptype(container, dadosBrutos);
       break;
-    case 4:
-      chartEstatisticas(container, diasUteis, fimDeSemana);
-      break;
-    case 5:  
+    case 4:  
       chartPizzaPagamento(container, diasUteis, fimDeSemana);
       break;
-    case 6:
+    case 5:
       chartDesvioPadrao(container, diasUteis, fimDeSemana);
       break;
-    case 7:
+    case 6:
       chartAmplitude(container, diasUteis, fimDeSemana);
       break;
-    case 8:
+    case 7:
       chartCoeficienteVariacao(container, diasUteis, fimDeSemana);
       break;
 
@@ -294,31 +291,7 @@ function chartRatecodeTriptype(container, dados) {
   });
 }
 
-function chartEstatisticas(container, diasUteis, fimDeSemana) {
-  const campos = ["trip_distance", "fare_amount", "tip_amount", "total_amount", "tempo_viagem"];
 
-  const data = campos.map(campo => {
-    const u = diasUteis.map(d => d[campo]);
-    const w = fimDeSemana.map(d => d[campo]);
-
-    const uMedia = d3.mean(u), uStd = d3.deviation(u), uAmp = d3.max(u) - d3.min(u);
-    const wMedia = d3.mean(w), wStd = d3.deviation(w), wAmp = d3.max(w) - d3.min(w);
-
-    return {
-      variavel: campo,
-      "Desvio Dias Úteis": uStd,
-      "Desvio Fim de Semana": wStd,
-      "Amplitude Dias Úteis": uAmp,
-      "Amplitude Fim de Semana": wAmp,
-      "CV Dias Úteis": (uStd / uMedia) * 100,
-      "CV Fim de Semana": (wStd / wMedia) * 100
-    };
-  });
-
-  desenharBarrasAgrupadas(container, data, "variavel", "Desvio Padrão", ["Desvio Dias Úteis", "Desvio Fim de Semana"]);
-  desenharBarrasAgrupadas(container, data, "variavel", "Amplitude", ["Amplitude Dias Úteis", "Amplitude Fim de Semana"]);
-  desenharBarrasAgrupadas(container, data, "variavel", "Coef. Variação (%)", ["CV Dias Úteis", "CV Fim de Semana"]);
-}
 
 const tooltip = d3.select("body")
   .append("div")
