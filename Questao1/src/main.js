@@ -4,6 +4,7 @@ function main() {
   const loadBtn  = document.querySelector('#loadBtn');
   const clearBtn = document.querySelector('#clearBtn');
   const nextBtn  = document.querySelector('#nextBtn');
+  const prevBtn  = document.querySelector('#prevBtn');
 
   let currentChart = 0;
   const totalCharts = 9;
@@ -17,6 +18,11 @@ function main() {
   clearBtn.addEventListener('click', () => clearChart());
   nextBtn.addEventListener('click', async () => {
     currentChart = (currentChart + 1) % totalCharts;
+    await doLoad();
+  });
+
+  prevBtn.addEventListener('click', async () => {
+    currentChart = (currentChart - 1 + totalCharts) % totalCharts;
     await doLoad();
   });
 }
