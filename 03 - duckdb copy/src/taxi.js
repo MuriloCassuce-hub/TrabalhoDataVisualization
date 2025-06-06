@@ -1,0 +1,69 @@
+import { loadDb } from './config';
+
+export class Taxi {
+    async init() {
+        this.db = await loadDb();
+        this.conn = await this.db.connect();
+        this.color = "green";
+        this.table = 'taxi_2023';
+    }
+
+    async loadTaxi(months = 6) {
+        if (!this.db || !this.conn)
+            throw new Error('Database not initialized. Please call init() first.');
+
+        const files = [];
+        for (let id = 1; id <= months; id++) {
+            const sId = String(id).padStart(2, '0');
+            files.push({ 
+                key: `Y2023M${sId}`, 
+                url: `${this.color}/${this.color}_tripdata_2023-${sId}.parquet` 
+            });
+
+            const res = await fetch(files[files.length - 1].url);
+            await this.db.registerFileBuffer(
+                files[files.length - 1].key, 
+                new Uint8Array(await res.arrayBuffer())
+            );
+        }
+
+        await this.conn.query(`
+            CREATE TABLE ${this.table} AS
+            SELECT * FROM read_parquet([${files.map(d => d.key).join(",")}]);
+        `);
+    }
+
+    async query(sql) {
+        if (!this.db || !this.conn)
+            throw new Error('Database not initialized. Please call init() first.');
+
+        let result = await this.conn.query(sql);
+        return result.toArray().map(row => row.toJSON());
+    }
+
+    async getAvgTipByHour() {
+        const sql = `
+            SELECT 
+                EXTRACT(HOUR FROM lpep_pickup_datetime) AS hour,
+                AVG(tip_amount) AS avgTip
+            FROM ${this.table}
+            WHERE tip_amount IS NOT NULL
+            GROUP BY hour
+            ORDER BY hour
+        `;
+        return await this.query(sql);
+    }
+
+    async getAllTrips() {
+        const sql = `
+            SELECT 
+                EXTRACT(HOUR FROM lpep_pickup_datetime) + EXTRACT(MINUTE FROM lpep_pickup_datetime)/60.0 AS hour,
+                tip_amount
+            FROM ${this.table}
+            WHERE tip_amount IS NOT NULL
+            AND tip_amount <= 20
+            ORDER BY lpep_pickup_datetime
+        `;
+        return await this.query(sql);
+    }
+}

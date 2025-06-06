@@ -1,0 +1,57 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos de Corridas e Gorjetas por Hora</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="main-container">
+        <h2>Valor Médio das Gorjetas por Hora</h2>
+        <svg id="tipChart" width="800" height="500">
+            <g id="axisX-tip"></g>
+            <g id="axisY-tip"></g>
+            <g id="group-tip"></g>
+        </svg>
+
+        <h2>Média de Corridas por Hora</h2>
+        <svg id="rideChart" width="800" height="500">
+            <g id="axisX-ride"></g>
+            <g id="axisY-ride"></g>
+            <g id="group-ride"></g>
+        </svg>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gráficos Taxi</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script type="module" src="./seu-script.js"></script>
+  <style>
+    svg {
+      border: 1px solid #ccc;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Gorjetas Médias por Hora</h2>
+  <svg id="tipChart" width="700" height="400">
+    <g id="group-tip"></g>
+    <g id="axisX-tip"></g>
+    <g id="axisY-tip"></g>
+  </svg>
+
+  <h2>Média de Corridas por Hora</h2>
+  <svg id="rideChart" width="700" height="400">
+    <g id="group-ride"></g>
+    <g id="axisX-ride"></g>
+    <g id="axisY-ride"></g>
+  </svg>
+</body>
+</html>
